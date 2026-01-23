@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import co.elastic.apm.api.CaptureTransaction;
 import java.util.List;
 import java.util.Map;
 
@@ -22,23 +23,34 @@ public class SurveyController {
     private final SparkService sparkService;
     
     @GetMapping("/survey/questions")
+    @CaptureTransaction(type = "HTTP", value = "GetSurveyQuestions")
     public ResponseEntity<List<SurveyQuestion>> getQuestions() {
         log.info("Fetching survey questions");
         return ResponseEntity.ok(surveyService.getActiveQuestions());
     }
     
     @PostMapping("/survey/submit")
-    public ResponseEntity<SurveyResponse> submitSurvey(@RequestBody Map<String, Object> responses) {
+    @CaptureTransaction(type = "HTTP", value = "SubmitSurvey")
+    public ResponseEntity<SurveyResponse> submitSurvey(
+            @RequestBody Map<String, Object> responses,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
+        
         log.info("Submitting survey responses: {}", responses.keySet());
-        SurveyResponse response = surveyService.saveResponse(responses);
+        SurveyResponse response = surveyService.saveResponse(responses, userAgent, ipAddress);
+        
+        // Trigger Spark processing
         sparkService.processSurveyResponse(response);
+        
         return ResponseEntity.ok(response);
     }
     
     @GetMapping("/survey/stats")
+    @CaptureTransaction(type = "HTTP", value = "GetSurveyStats")
     public ResponseEntity<Map<String, Object>> getStats() {
         log.info("Fetching survey statistics");
-        return ResponseEntity.ok(sparkService.getAggregatedStats());
+        Map<String, Object> stats = sparkService.getAggregatedStats();
+        return ResponseEntity.ok(stats);
     }
     
     @GetMapping("/spark/jobs")
@@ -48,9 +60,13 @@ public class SurveyController {
     }
     
     @GetMapping("/elk/logs")
-    public ResponseEntity<Map<String, Object>> searchLogs(@RequestParam String query) {
+    public ResponseEntity<Map<String, Object>> searchLogs(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int from,
+            @RequestParam(defaultValue = "10") int size) {
+        
         log.info("Searching logs with query: {}", query);
-        return ResponseEntity.ok(surveyService.searchLogs(query));
+        return ResponseEntity.ok(surveyService.searchLogs(query, from, size));
     }
     
     @GetMapping("/health")

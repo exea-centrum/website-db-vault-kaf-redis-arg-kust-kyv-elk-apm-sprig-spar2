@@ -5,7 +5,6 @@ metadata:
   namespace: ${NAMESPACE}
   labels:
     app: spring-app
-    version: v2
 spec:
   replicas: 2
   selector:
@@ -16,7 +15,6 @@ spec:
       labels:
         app: spring-app
     spec:
-      serviceAccountName: spring-app-sa
       containers:
       - name: spring-app
         image: ${REGISTRY}/spring-app:latest
@@ -24,22 +22,12 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "kubernetes"
-        - name: MONGODB_URI
-          value: "mongodb://mongodb-service:27017/surveys"
+        - name: MONGODB_HOST
+          value: "mongodb-service"
+        - name: MONGODB_PORT
+          value: "27017"
         - name: KAFKA_BOOTSTRAP_SERVERS
           value: "kafka-broker:9092"
-        - name: ELASTICSEARCH_HOST
-          value: "elasticsearch-service:9200"
-        - name: SPRING_DATA_MONGODB_DATABASE
-          value: "surveys"
-        - name: JAVA_OPTS
-          value: "-javaagent:/app/elastic-apm-agent.jar -Delastic.apm.service_name=spring-survey-service -Delastic.apm.server_url=http://apm-server:8200 -Delastic.apm.environment=production"
-        volumeMounts:
-        - name: apm-agent
-          mountPath: /app/elastic-apm-agent.jar
-          subPath: elastic-apm-agent.jar
         resources:
           requests:
             memory: "512Mi"
@@ -59,10 +47,6 @@ spec:
             port: 8080
           initialDelaySeconds: 60
           periodSeconds: 15
-      volumes:
-      - name: apm-agent
-        configMap:
-          name: apm-agent-config
 ---
 apiVersion: v1
 kind: Service
@@ -76,33 +60,3 @@ spec:
   - port: 8080
     targetPort: 8080
     name: http
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: spring-app-sa
-  namespace: ${NAMESPACE}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: spring-app-role
-  namespace: ${NAMESPACE}
-rules:
-- apiGroups: [""]
-  resources: ["pods", "services", "configmaps"]
-  verbs: ["get", "list", "watch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: spring-app-rolebinding
-  namespace: ${NAMESPACE}
-subjects:
-- kind: ServiceAccount
-  name: spring-app-sa
-  namespace: ${NAMESPACE}
-roleRef:
-  kind: Role
-  name: spring-app-role
-  apiGroup: rbac.authorization.k8s.io

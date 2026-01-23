@@ -1,90 +1,19 @@
-/* static/css/new-survey.css */
+.new-survey-section { animation: slideUp 0.5s ease-out; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-.new-survey-section {
-    animation: slideUp 0.5s ease-out;
-}
+.spark-job-running { animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+.rating-buttons label span { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.rating-buttons label span:hover { transform: scale(1.1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
 
-/* Spark job status animations */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
+#new-survey-form input:focus, #new-survey-form textarea:focus { outline: none; ring: 2px; ring-color: #3b82f6; }
 
-.spark-job-running {
-    animation: pulse 2s infinite;
-}
+#logs-results::-webkit-scrollbar { width: 6px; }
+#logs-results::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 3px; }
+#logs-results::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 3px; }
 
-/* Log entries styling */
-.log-entry {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 12px;
-    transition: all 0.2s;
-}
+.bg-slate-800\/50 { transition: all 0.3s; }
+.bg-slate-800\/50:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
 
-.log-entry:hover {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: #3b82f6;
-}
-
-/* Rating stars animation */
-.rating-buttons label span {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.rating-buttons label span:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-}
-
-/* Form focus states */
-#new-survey-form input:focus,
-#new-survey-form textarea:focus {
-    outline: none;
-    ring: 2px;
-    ring-color: #3b82f6;
-}
-
-/* Scrollbar styling */
-#logs-results::-webkit-scrollbar {
-    width: 6px;
-}
-
-#logs-results::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
-}
-
-#logs-results::-webkit-scrollbar-thumb {
-    background: rgba(59, 130, 246, 0.5);
-    border-radius: 3px;
-}
-
-/* Stats cards hover effects */
-.bg-slate-800\/50 {
-    transition: all 0.3s;
-}
-
-.bg-slate-800\/50:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-}
-
-/* Progress bar for processing time */
-.processing-bar {
-    height: 4px;
-    background: linear-gradient(90deg, #3b82f6, #06b6d4);
-    border-radius: 2px;
-    width: 0;
-    transition: width 1s ease-in-out;
-}
+.processing-bar { height: 4px; background: linear-gradient(90deg, #3b82f6, #06b6d4); border-radius: 2px; width: 0; transition: width 1s ease-in-out; }
