@@ -13,8 +13,10 @@ public class SurveyQuestion {
     private String questionText;
     private QuestionType type;
     private String[] options;
+    private Integer order;
     private boolean active;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     
     public enum QuestionType {
         RATING, TEXT, MULTIPLE_CHOICE, BOOLEAN

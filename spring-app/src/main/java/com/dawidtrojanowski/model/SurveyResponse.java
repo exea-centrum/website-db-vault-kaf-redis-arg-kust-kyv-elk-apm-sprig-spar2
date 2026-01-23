@@ -11,8 +11,20 @@ import java.util.Map;
 public class SurveyResponse {
     @Id
     private String id;
+    private String sessionId;
+    private String userId;
     private Map<String, Object> answers;
     private LocalDateTime submittedAt;
     private String userAgent;
     private String ipAddress;
+    private Metadata metadata;
+    
+    @Data
+    public static class Metadata {
+        private String browser;
+        private String os;
+        private String device;
+        private Double processingTime;
+        private String sparkJobId;
+    }
 }
