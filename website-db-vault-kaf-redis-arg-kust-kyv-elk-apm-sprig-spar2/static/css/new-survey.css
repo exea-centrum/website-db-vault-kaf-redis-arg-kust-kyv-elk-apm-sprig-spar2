@@ -1,0 +1,19 @@
+.new-survey-section { animation: slideUp 0.5s ease-out; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.spark-job-running { animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.rating-buttons label span { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.rating-buttons label span:hover { transform: scale(1.1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+
+#new-survey-form input:focus, #new-survey-form textarea:focus { outline: none; ring: 2px; ring-color: #3b82f6; }
+
+#logs-results::-webkit-scrollbar { width: 6px; }
+#logs-results::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 3px; }
+#logs-results::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 3px; }
+
+.bg-slate-800\/50 { transition: all 0.3s; }
+.bg-slate-800\/50:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
+
+.processing-bar { height: 4px; background: linear-gradient(90deg, #3b82f6, #06b6d4); border-radius: 2px; width: 0; transition: width 1s ease-in-out; }

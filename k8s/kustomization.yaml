@@ -7,12 +7,27 @@ resources:
   - spring-app-deployment.yaml
   - mongodb.yaml
   - elasticsearch.yaml
+  - logstash.yaml
   - kibana.yaml
   - spark-master.yaml
   - spark-worker.yaml
-  - ingress.yaml
+  - ingress-extended.yaml
 
 images:
-  - name: ${REGISTRY}/spring-app
+  - name: spring-app
     newName: ${REGISTRY}/spring-app
     newTag: latest
+
+configMapGenerator:
+  - name: apm-agent-config
+    files:
+      - elastic-apm-agent.jar
+
+secretGenerator:
+  - name: mongodb-secret
+    literals:
+      - username=root
+      - password=password
+  - name: kibana-auth
+    literals:
+      - auth=admin:$apr1$s9v1t1z1$C6Q4KvL9T7H8N2B1V3M5W6

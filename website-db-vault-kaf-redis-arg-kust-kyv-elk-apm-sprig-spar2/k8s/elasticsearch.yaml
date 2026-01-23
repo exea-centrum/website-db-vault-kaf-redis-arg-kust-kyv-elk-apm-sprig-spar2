@@ -27,8 +27,6 @@ spec:
         ports:
         - containerPort: 9200
           name: http
-        - containerPort: 9300
-          name: transport
         volumeMounts:
         - name: elasticsearch-data
           mountPath: /usr/share/elasticsearch/data
@@ -51,5 +49,3 @@ spec:
   ports:
   - port: 9200
     targetPort: 9200
-  - port: 9300
-    targetPort: 9300
