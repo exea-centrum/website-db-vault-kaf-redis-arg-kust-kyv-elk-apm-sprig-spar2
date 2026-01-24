@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: davtroelkjs
+namespace: ${NAMESPACE}
 
 resources:
   - spring-app-deployment.yaml
@@ -17,11 +17,6 @@ images:
   - name: spring-app
     newName: ${REGISTRY}/spring-app
     newTag: latest
-
-configMapGenerator:
-  - name: apm-agent-config
-    files:
-      - elastic-apm-agent.jar
 
 secretGenerator:
   - name: mongodb-secret
