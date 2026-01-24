@@ -3,7 +3,8 @@ name: Build and Deploy Spring App
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+    paths:
+      - "spring-app/**"
 
 jobs:
   build:
@@ -28,7 +29,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_PAT }}
 
       - name: Build and push Spring App
         uses: docker/build-push-action@v4
@@ -36,13 +37,13 @@ jobs:
           context: ./spring-app
           push: true
           tags: |
-            ghcr.io/dawidtrojanowski/spring-app:latest
-            ghcr.io/dawidtrojanowski/spring-app:${{ github.sha }}
+            ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest
+            ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:${{ github.sha }}
 
       - name: Update Kustomize
         run: |
           cd k8s
-          kustomize edit set image spring-app=ghcr.io/dawidtrojanowski/spring-app:${{ github.sha }}
+          kustomize edit set image spring-app=ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:${{ github.sha }}
 
       - name: Commit and push changes
         run: |
