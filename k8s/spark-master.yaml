@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spark-master
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   replicas: 1
   selector:
@@ -14,55 +14,61 @@ spec:
         app: spark-master
     spec:
       containers:
-      - name: spark-master
-        image: bitnami/spark:3.5.0
-        command: ["/opt/bitnami/spark/bin/spark-class"]
-        args: ["org.apache.spark.deploy.master.Master", 
-               "--host", "spark-master", 
-               "--port", "7077",
-               "--webui-port", "8080"]
-        ports:
-        - containerPort: 7077
-          name: spark
-        - containerPort: 8080
-          name: http
-        env:
-        - name: SPARK_MODE
-          value: "master"
-        - name: SPARK_MASTER_HOST
-          value: "spark-master"
-        - name: SPARK_RPC_AUTHENTICATION_ENABLED
-          value: "no"
-        - name: SPARK_RPC_ENCRYPTION_ENABLED
-          value: "no"
-        - name: SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED
-          value: "no"
-        - name: SPARK_SSL_ENABLED
-          value: "no"
-        volumeMounts:
-        - name: spark-logs
-          mountPath: /opt/bitnami/spark/logs
-        - name: mongo-connector
-          mountPath: /opt/bitnami/spark/jars/mongo-spark-connector.jar
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1"
+        - name: spark-master
+          image: bitnami/spark:3.5.0
+          command: ["/opt/bitnami/spark/bin/spark-class"]
+          args:
+            [
+              "org.apache.spark.deploy.master.Master",
+              "--host",
+              "spark-master",
+              "--port",
+              "7077",
+              "--webui-port",
+              "8080",
+            ]
+          ports:
+            - containerPort: 7077
+              name: spark
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPARK_MODE
+              value: "master"
+            - name: SPARK_MASTER_HOST
+              value: "spark-master"
+            - name: SPARK_RPC_AUTHENTICATION_ENABLED
+              value: "no"
+            - name: SPARK_RPC_ENCRYPTION_ENABLED
+              value: "no"
+            - name: SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED
+              value: "no"
+            - name: SPARK_SSL_ENABLED
+              value: "no"
+          volumeMounts:
+            - name: spark-logs
+              mountPath: /opt/bitnami/spark/logs
+            - name: mongo-connector
+              mountPath: /opt/bitnami/spark/jars/mongo-spark-connector.jar
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
       volumes:
-      - name: spark-logs
-        emptyDir: {}
-      - name: mongo-connector
-        configMap:
-          name: mongo-spark-connector
+        - name: spark-logs
+          emptyDir: {}
+        - name: mongo-connector
+          configMap:
+            name: mongo-spark-connector
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mongo-spark-connector
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 binaryData:
   mongo-spark-connector.jar: |
     # Binary jar file placeholder
