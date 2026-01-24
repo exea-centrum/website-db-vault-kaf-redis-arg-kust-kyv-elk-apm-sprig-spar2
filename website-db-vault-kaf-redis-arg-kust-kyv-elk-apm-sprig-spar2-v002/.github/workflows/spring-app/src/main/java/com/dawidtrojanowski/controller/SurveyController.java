@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import co.elastic.apm.api.CaptureTransaction;
 import java.util.List;
 import java.util.Map;
 
@@ -22,12 +23,14 @@ public class SurveyController {
     private final SparkService sparkService;
     
     @GetMapping("/survey/questions")
+    @CaptureTransaction(type = "HTTP", value = "GetSurveyQuestions")
     public ResponseEntity<List<SurveyQuestion>> getQuestions() {
         log.info("Fetching survey questions");
         return ResponseEntity.ok(surveyService.getActiveQuestions());
     }
     
     @PostMapping("/survey/submit")
+    @CaptureTransaction(type = "HTTP", value = "SubmitSurvey")
     public ResponseEntity<SurveyResponse> submitSurvey(
             @RequestBody Map<String, Object> responses,
             @RequestHeader(value = "User-Agent", required = false) String userAgent,
@@ -43,6 +46,7 @@ public class SurveyController {
     }
     
     @GetMapping("/survey/stats")
+    @CaptureTransaction(type = "HTTP", value = "GetSurveyStats")
     public ResponseEntity<Map<String, Object>> getStats() {
         log.info("Fetching survey statistics");
         Map<String, Object> stats = sparkService.getAggregatedStats();

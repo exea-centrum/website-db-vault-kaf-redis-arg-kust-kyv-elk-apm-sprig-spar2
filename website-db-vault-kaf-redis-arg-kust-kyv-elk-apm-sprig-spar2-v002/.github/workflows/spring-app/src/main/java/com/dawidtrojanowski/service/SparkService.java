@@ -6,8 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.*;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 

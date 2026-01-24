@@ -20,10 +20,11 @@
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <spring-kafka.version>3.1.0</spring-kafka.version>
+        <spring-kafka.version>3.0.12</spring-kafka.version>
         <spark.version>3.5.0</spark.version>
         <mongodb-driver.version>4.11.1</mongodb-driver.version>
-        <elasticsearch.version>8.12.0</elasticsearch.version>
+        <elasticsearch.version>8.11.0</elasticsearch.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
 
     <dependencies>
@@ -49,6 +50,7 @@
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
+            <version>${spring-kafka.version}</version>
         </dependency>
         
         <!-- Apache Spark -->
@@ -76,8 +78,9 @@
         
         <!-- Elasticsearch -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-elasticsearch</artifactId>
+            <version>5.1.5</version>
         </dependency>
         
         <!-- APM -->
@@ -85,14 +88,23 @@
             <groupId>co.elastic.apm</groupId>
             <artifactId>apm-agent-attach</artifactId>
             <version>1.45.0</version>
-            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-agent-api</artifactId>
+            <version>1.45.0</version>
         </dependency>
         
         <!-- Utilities -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
         
         <!-- Monitoring -->
@@ -105,6 +117,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -126,11 +143,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

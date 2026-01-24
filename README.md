@@ -12,3 +12,4 @@ This is a comprehensive full-stack project featuring:
 - **GitOps**: ArgoCD ready
 
 ## Architecture
+[file content end]
