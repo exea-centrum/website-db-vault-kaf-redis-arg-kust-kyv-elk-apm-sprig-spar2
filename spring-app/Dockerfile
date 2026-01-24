@@ -15,6 +15,7 @@ USER spring:spring
 
 EXPOSE 8080
 
+
 ENTRYPOINT ["java", \
     "-javaagent:/elastic-apm-agent.jar", \
     "-Delastic.apm.service_name=spring-survey-service", \
