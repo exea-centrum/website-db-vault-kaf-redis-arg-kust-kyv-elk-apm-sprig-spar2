@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-frontend
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-frontend
+  template:
+    metadata:
+      labels:
+        app: nginx-frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: static-content
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: static-content
+          configMap:
+            name: static-content
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-frontend-service
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: nginx-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: static-content
+  namespace: ${NAMESPACE}
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="pl">
+    ... (zawartość index.html) ...
