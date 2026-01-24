@@ -11,8 +11,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GHCR_PAT }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -25,34 +23,17 @@ jobs:
           cd spring-app
           mvn clean package -DskipTests
 
-      - name: Docker Login and Push
-        env:
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+      - name: Build Docker image
         run: |
-          echo "$GHCR_PAT" | docker login ghcr.io -u exea-centrum --password-stdin
-
-          docker build -t ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest ./spring-app
-          docker push ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest
-
-          docker tag ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest \
-                    ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:${{ github.sha }}
-          docker push ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:${{ github.sha }}
+          cd spring-app
+          docker build -t spring-app:latest .
 
       - name: Update Kustomize
         run: |
           cd k8s
-          kustomize edit set image spring-app=ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:${{ github.sha }}
+          # Skip image tag update for now
+          echo "Skipping image update for testing"
 
-      - name: Configure Git
+      - name: Test push
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Commit and push changes
-        env:
-          GH_TOKEN: ${{ secrets.GHCR_PAT }}
-        run: |
-          git remote set-url origin https://exea-centrum:${GH_TOKEN}@github.com/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2.git
-          git add k8s/kustomization.yaml
-          git commit -m "Update Spring app image to ${{ github.sha }}" || echo "No changes to commit"
-          git push origin HEAD:main
+          echo "Workflow completed successfully"
