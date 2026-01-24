@@ -8,7 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -27,8 +29,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: exea-centrum # Nazwa organizacji zamiast ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }} # Używamy GHCR_PAT zamiast GITHUB_TOKEN
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Spring App
         uses: docker/build-push-action@v4
