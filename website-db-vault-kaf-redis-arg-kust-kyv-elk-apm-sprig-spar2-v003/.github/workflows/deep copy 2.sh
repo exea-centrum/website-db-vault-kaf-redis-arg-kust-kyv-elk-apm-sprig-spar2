@@ -1734,6 +1734,10 @@ EOF
 cat > spring-app/Dockerfile << 'EOF'
 FROM eclipse-temurin:17-jre-alpine
 
+# Install APM agent
+RUN wget -O /elastic-apm-agent.jar \
+    https://search.maven.org/remotecontent?filepath=co/elastic/apm/elastic-apm-agent/1.36.0/elastic-apm-agent-1.36.0.jar
+
 WORKDIR /app
 
 # Copy jar file
@@ -1745,7 +1749,13 @@ USER spring:spring
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", \
+    "-javaagent:/elastic-apm-agent.jar", \
+    "-Delastic.apm.service_name=spring-survey-service", \
+    "-Delastic.apm.server_url=http://apm-server:8200", \
+    "-Delastic.apm.environment=${ENVIRONMENT:-production}", \
+    "-Delastic.apm.application_packages=com.dawidtrojanowski", \
+    "-jar", "app.jar"]
 EOF
 
 # pom.xml
@@ -1832,6 +1842,14 @@ cat > spring-app/pom.xml << 'EOF'
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
         </dependency>
         
+        <!-- APM -->
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-agent-attach</artifactId>
+            <version>1.45.0</version>
+            <scope>provided</scope>
+        </dependency>
+        
         <!-- Utilities -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -1888,93 +1906,10 @@ EOF
 echo "Created Spring Boot application files"
 
 # ============================================
-# 5. Create FIXED Kubernetes Manifests
+# 5. Create Kubernetes Manifests
 # ============================================
 
-# Create missing dependencies first
-cat > k8s/kafka-deployment.yaml << 'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kafka
-  namespace: ${NAMESPACE}
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kafka
-  template:
-    metadata:
-      labels:
-        app: kafka
-    spec:
-      containers:
-      - name: kafka
-        image: confluentinc/cp-kafka:7.4.0
-        env:
-        - name: KAFKA_BROKER_ID
-          value: "1"
-        - name: KAFKA_ZOOKEEPER_CONNECT
-          value: "localhost:2181"
-        - name: KAFKA_ADVERTISED_LISTENERS
-          value: "PLAINTEXT://kafka-broker:9092"
-        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: "1"
-        ports:
-        - containerPort: 9092
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kafka-broker
-  namespace: ${NAMESPACE}
-spec:
-  selector:
-    app: kafka
-  ports:
-  - port: 9092
-    targetPort: 9092
-EOF
-
-cat > k8s/apm-server-deployment.yaml << 'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: apm-server
-  namespace: ${NAMESPACE}
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: apm-server
-  template:
-    metadata:
-      labels:
-        app: apm-server
-    spec:
-      containers:
-      - name: apm-server
-        image: docker.elastic.co/apm/apm-server:8.11.0
-        env:
-        - name: output.elasticsearch.hosts
-          value: '["http://elasticsearch-service:9200"]'
-        ports:
-        - containerPort: 8200
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: apm-server
-  namespace: ${NAMESPACE}
-spec:
-  selector:
-    app: apm-server
-  ports:
-  - port: 8200
-    targetPort: 8200
-EOF
-
-# FIXED spring-app-deployment.yaml - removed problematic dependencies
+# spring-app-deployment.yaml
 cat > k8s/spring-app-deployment.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -1985,7 +1920,7 @@ metadata:
     app: spring-app
     version: v2
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: spring-app
@@ -1998,7 +1933,7 @@ spec:
       containers:
       - name: spring-app
         image: ${REGISTRY}/spring-app:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
@@ -2006,8 +1941,18 @@ spec:
           value: "kubernetes"
         - name: MONGODB_URI
           value: "mongodb://mongodb-service:27017/surveys"
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-broker:9092"
+        - name: ELASTICSEARCH_HOST
+          value: "elasticsearch-service:9200"
         - name: SPRING_DATA_MONGODB_DATABASE
           value: "surveys"
+        - name: JAVA_OPTS
+          value: "-javaagent:/app/elastic-apm-agent.jar -Delastic.apm.service_name=spring-survey-service -Delastic.apm.server_url=http://apm-server:8200 -Delastic.apm.environment=production"
+        volumeMounts:
+        - name: apm-agent
+          mountPath: /app/elastic-apm-agent.jar
+          subPath: elastic-apm-agent.jar
         resources:
           requests:
             memory: "512Mi"
@@ -2019,14 +1964,18 @@ spec:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 90
+          initialDelaySeconds: 60
           periodSeconds: 15
+      volumes:
+      - name: apm-agent
+        configMap:
+          name: apm-agent-config
 ---
 apiVersion: v1
 kind: Service
@@ -2072,7 +2021,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 EOF
 
-# Fixed mongodb.yaml
+# mongodb.yaml
 cat > k8s/mongodb.yaml << 'EOF'
 apiVersion: apps/v1
 kind: StatefulSet
@@ -2100,6 +2049,16 @@ spec:
         env:
         - name: MONGO_INITDB_DATABASE
           value: "surveys"
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: username
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: password
         volumeMounts:
         - name: mongodb-data
           mountPath: /data/db
@@ -2111,13 +2070,19 @@ spec:
             memory: "1Gi"
             cpu: "500m"
         livenessProbe:
-          tcpSocket:
-            port: 27017
+          exec:
+            command:
+            - mongo
+            - --eval
+            - "db.adminCommand('ping')"
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
-          tcpSocket:
-            port: 27017
+          exec:
+            command:
+            - mongo
+            - --eval
+            - "db.adminCommand('ping')"
           initialDelaySeconds: 5
           periodSeconds: 5
   volumeClaimTemplates:
@@ -2140,9 +2105,20 @@ spec:
   ports:
   - port: 27017
     targetPort: 27017
+  clusterIP: None
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: ${NAMESPACE}
+type: Opaque
+data:
+  username: cm9vdA==  # root
+  password: cGFzc3dvcmQ=  # password
 EOF
 
-# Fixed elasticsearch.yaml
+# elasticsearch.yaml
 cat > k8s/elasticsearch.yaml << 'EOF'
 apiVersion: apps/v1
 kind: StatefulSet
@@ -2201,7 +2177,7 @@ spec:
     targetPort: 9300
 EOF
 
-# Fixed logstash.yaml
+# logstash.yaml
 cat > k8s/logstash.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -2224,42 +2200,18 @@ spec:
         ports:
         - containerPort: 5000
           name: tcp
+        - containerPort: 9600
+          name: http
+        volumeMounts:
+        - name: logstash-config
+          mountPath: /usr/share/logstash/pipeline
         env:
         - name: XPACK_MONITORING_ENABLED
           value: "false"
         command:
         - logstash
-        - -e
-        - |
-          input {
-            tcp {
-              port => 5000
-              codec => json_lines
-            }
-          }
-          filter {
-            if [type] == "spring" {
-              grok {
-                match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{NUMBER:pid} --- \[%{DATA:thread}\] %{DATA:class} : %{GREEDYDATA:message}" }
-              }
-              date {
-                match => [ "timestamp", "ISO8601" ]
-                target => "@timestamp"
-              }
-              mutate {
-                add_field => { "service_name" => "spring-app" }
-              }
-            }
-          }
-          output {
-            elasticsearch {
-              hosts => ["elasticsearch-service:9200"]
-              index => "logs-%{+YYYY.MM.dd}"
-            }
-            stdout {
-              codec => rubydebug
-            }
-          }
+        - -f
+        - /usr/share/logstash/pipeline/logstash.conf
         resources:
           requests:
             memory: "512Mi"
@@ -2267,6 +2219,52 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+      volumes:
+      - name: logstash-config
+        configMap:
+          name: logstash-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: ${NAMESPACE}
+data:
+  logstash.conf: |
+    input {
+      tcp {
+        port => 5000
+        codec => json_lines
+      }
+      http {
+        port => 9600
+      }
+    }
+    
+    filter {
+      if [type] == "spring" {
+        grok {
+          match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{NUMBER:pid} --- \[%{DATA:thread}\] %{DATA:class} : %{GREEDYDATA:message}" }
+        }
+        date {
+          match => [ "timestamp", "ISO8601" ]
+          target => "@timestamp"
+        }
+        mutate {
+          add_field => { "service_name" => "spring-app" }
+        }
+      }
+    }
+    
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch-service:9200"]
+        index => "logs-%{+YYYY.MM.dd}"
+      }
+      stdout {
+        codec => rubydebug
+      }
+    }
 ---
 apiVersion: v1
 kind: Service
@@ -2280,9 +2278,12 @@ spec:
   - port: 5000
     targetPort: 5000
     name: tcp
+  - port: 9600
+    targetPort: 9600
+    name: http
 EOF
 
-# Fixed kibana.yaml
+# kibana.yaml
 cat > k8s/kibana.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -2334,7 +2335,7 @@ spec:
     targetPort: 5601
 EOF
 
-# Fixed spark-master.yaml
+# spark-master.yaml
 cat > k8s/spark-master.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -2377,6 +2378,11 @@ spec:
           value: "no"
         - name: SPARK_SSL_ENABLED
           value: "no"
+        volumeMounts:
+        - name: spark-logs
+          mountPath: /opt/bitnami/spark/logs
+        - name: mongo-connector
+          mountPath: /opt/bitnami/spark/jars/mongo-spark-connector.jar
         resources:
           requests:
             memory: "1Gi"
@@ -2384,25 +2390,24 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "1"
+      volumes:
+      - name: spark-logs
+        emptyDir: {}
+      - name: mongo-connector
+        configMap:
+          name: mongo-spark-connector
 ---
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: spark-master-service
+  name: mongo-spark-connector
   namespace: ${NAMESPACE}
-spec:
-  selector:
-    app: spark-master
-  ports:
-  - port: 7077
-    targetPort: 7077
-    name: spark
-  - port: 8080
-    targetPort: 8080
-    name: http
+binaryData:
+  mongo-spark-connector.jar: |
+    # Binary jar file placeholder
 EOF
 
-# Fixed spark-worker.yaml
+# spark-worker.yaml
 cat > k8s/spark-worker.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -2410,7 +2415,7 @@ metadata:
   name: spark-worker
   namespace: ${NAMESPACE}
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: spark-worker
@@ -2444,9 +2449,25 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master-service
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: spark-master
+  ports:
+  - port: 7077
+    targetPort: 7077
+    name: spark
+  - port: 8080
+    targetPort: 8080
+    name: http
 EOF
 
-# Fixed ingress-extended.yaml - removed TLS and cert-manager references
+# ingress-extended.yaml
 cat > k8s/ingress-extended.yaml << 'EOF'
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -2455,10 +2476,16 @@ metadata:
   namespace: ${NAMESPACE}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: nginx
+  tls:
+  - hosts:
+    - survey.dawidtrojanowski.com
+    secretName: survey-tls-secret
   rules:
   - host: survey.dawidtrojanowski.com
     http:
@@ -2485,6 +2512,9 @@ metadata:
   namespace: ${NAMESPACE}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: kibana-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
 spec:
   ingressClassName: nginx
   rules:
@@ -2521,7 +2551,7 @@ spec:
               number: 8080
 EOF
 
-# Fixed kustomization.yaml
+# kustomization.yaml
 cat > k8s/kustomization.yaml << 'EOF'
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -2530,8 +2560,6 @@ namespace: ${NAMESPACE}
 
 resources:
   - spring-app-deployment.yaml
-  - kafka-deployment.yaml
-  - apm-server-deployment.yaml
   - mongodb.yaml
   - elasticsearch.yaml
   - logstash.yaml
@@ -2546,23 +2574,21 @@ images:
     newTag: latest
 
 configMapGenerator:
-  - name: mongodb-config
-    literals:
-      - database=surveys
-      - host=mongodb-service
-      - port=27017
+  - name: apm-agent-config
+    files:
+      - elastic-apm-agent.jar
 
 secretGenerator:
   - name: mongodb-secret
     literals:
-      - username=admin
+      - username=root
       - password=password
   - name: kibana-auth
     literals:
-      - auth=admin:password
+      - auth=admin:$apr1$s9v1t1z1$C6Q4KvL9T7H8N2B1V3M5W6
 EOF
 
-echo "Created FIXED Kubernetes manifests"
+echo "Created Kubernetes manifests"
 
 # ============================================
 # 6. Create GitHub Actions Workflow
@@ -2625,7 +2651,7 @@ jobs:
 EOF
 
 # ============================================
-# 7. Create fixed deploy.sh script
+# 7. Create deploy.sh script
 # ============================================
 cat > deploy.sh << 'EOF'
 #!/bin/bash
@@ -2661,22 +2687,14 @@ kubectl create namespace $NAMESPACE 2>/dev/null || true
 # Apply Kustomize
 echo -e "${YELLOW}Applying Kustomize manifests...${NC}"
 cd k8s
-
-# Create temporary files with environment substitution
-for file in *.yaml; do
-    if [ -f "$file" ]; then
-        envsubst < "$file" > "${file}.tmp"
-        mv "${file}.tmp" "$file"
-    fi
-done
-
-# Build and apply kustomization
+envsubst < kustomization.yaml > kustomization.yaml.tmp
+mv kustomization.yaml.tmp kustomization.yaml
 kustomize build . | kubectl apply -f -
 cd ..
 
 # Wait for deployments
 echo -e "${YELLOW}Waiting for deployments to be ready...${NC}"
-sleep 20
+sleep 10
 
 # Check deployment status
 echo -e "\n${BLUE}=== Deployment Status ===${NC}"
@@ -2716,26 +2734,9 @@ This is a comprehensive full-stack project featuring:
 - **Data Processing**: Apache Spark for real-time analytics
 - **Database**: MongoDB for NoSQL storage
 - **Logging & Monitoring**: ELK Stack (Elasticsearch, Logstash, Kibana)
-- **Message Queue**: Apache Kafka
 - **Orchestration**: Kubernetes with Kustomize
 - **CI/CD**: GitHub Actions
 - **GitOps**: ArgoCD ready
 
 ## Architecture
-
-### Components:
-1. **Spring Boot Application** (`spring-app/`)
-   - REST API for survey management
-   - MongoDB integration
-   - Kafka message publishing
-   - Spark job triggering
-   - Health endpoints for monitoring
-
-2. **Frontend** (`index.html`, `static/`)
-   - Responsive design with TailwindCSS
-   - Interactive survey forms
-   - Real-time statistics with Chart.js
-   - Spark job monitoring
-   - ELK log search interface
-
-3. **Data Pipeline**:
+[file content end]

@@ -1,10 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: davtroelkjs
+namespace: ${NAMESPACE}
 
 resources:
   - spring-app-deployment.yaml
+  - kafka-deployment.yaml
+  - apm-server-deployment.yaml
   - mongodb.yaml
   - elasticsearch.yaml
   - logstash.yaml
@@ -18,11 +20,18 @@ images:
     newName: ${REGISTRY}/spring-app
     newTag: latest
 
+configMapGenerator:
+  - name: mongodb-config
+    literals:
+      - database=surveys
+      - host=mongodb-service
+      - port=27017
+
 secretGenerator:
   - name: mongodb-secret
     literals:
-      - username=root
+      - username=admin
       - password=password
   - name: kibana-auth
     literals:
-      - auth=admin:$apr1$s9v1t1z1$C6Q4KvL9T7H8N2B1V3M5W6
+      - auth=admin:password

@@ -20,10 +20,11 @@
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <spring-kafka.version>3.1.0</spring-kafka.version>
+        <spring-kafka.version>3.0.12</spring-kafka.version>
         <spark.version>3.5.0</spark.version>
-        <mongodb-driver.version>4.11.1</mongodb-driver.version>
-        <elasticsearch.version>8.12.0</elasticsearch.version>
+        <mongodb-spark.version>10.2.0</mongodb-spark.version>
+        <elasticsearch.version>8.11.0</elasticsearch.version>
+        <apm.version>1.45.0</apm.version>
     </properties>
 
     <dependencies>
@@ -71,13 +72,22 @@
         <dependency>
             <groupId>org.mongodb.spark</groupId>
             <artifactId>mongo-spark-connector_2.13</artifactId>
-            <version>10.2.0</version>
+            <version>${mongodb-spark.version}</version>
         </dependency>
         
         <!-- Elasticsearch -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-elasticsearch</artifactId>
+            <version>5.1.5</version>
+        </dependency>
+        
+        <!-- APM -->
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-agent-attach</artifactId>
+            <version>${apm.version}</version>
+            <scope>provided</scope>
         </dependency>
         
         <!-- Utilities -->
@@ -97,6 +107,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -123,6 +138,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

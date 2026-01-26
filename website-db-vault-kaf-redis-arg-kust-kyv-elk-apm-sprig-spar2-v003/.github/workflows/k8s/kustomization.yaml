@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - spring-app-deployment.yaml
+  - mongodb.yaml
+  - elasticsearch.yaml
+  - logstash.yaml
+  - kibana.yaml
+  - spark-master.yaml
+  - spark-worker.yaml
+  - ingress-extended.yaml
+
+# Jeśli chcesz używać image updates, dodaj:
+images:
+  - name: spring-app
+    newName: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app
+    newTag: latest

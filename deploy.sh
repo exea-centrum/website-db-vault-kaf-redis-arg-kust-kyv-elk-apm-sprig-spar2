@@ -31,14 +31,22 @@ kubectl create namespace $NAMESPACE 2>/dev/null || true
 # Apply Kustomize
 echo -e "${YELLOW}Applying Kustomize manifests...${NC}"
 cd k8s
-envsubst < kustomization.yaml > kustomization.yaml.tmp
-mv kustomization.yaml.tmp kustomization.yaml
+
+# Create temporary files with environment substitution
+for file in *.yaml; do
+    if [ -f "$file" ]; then
+        envsubst < "$file" > "${file}.tmp"
+        mv "${file}.tmp" "$file"
+    fi
+done
+
+# Build and apply kustomization
 kustomize build . | kubectl apply -f -
 cd ..
 
 # Wait for deployments
 echo -e "${YELLOW}Waiting for deployments to be ready...${NC}"
-sleep 10
+sleep 20
 
 # Check deployment status
 echo -e "\n${BLUE}=== Deployment Status ===${NC}"

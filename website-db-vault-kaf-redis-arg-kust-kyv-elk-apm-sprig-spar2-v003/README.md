@@ -7,26 +7,9 @@ This is a comprehensive full-stack project featuring:
 - **Data Processing**: Apache Spark for real-time analytics
 - **Database**: MongoDB for NoSQL storage
 - **Logging & Monitoring**: ELK Stack (Elasticsearch, Logstash, Kibana)
-- **Message Queue**: Apache Kafka
 - **Orchestration**: Kubernetes with Kustomize
 - **CI/CD**: GitHub Actions
 - **GitOps**: ArgoCD ready
 
 ## Architecture
-
-### Components:
-1. **Spring Boot Application** (`spring-app/`)
-   - REST API for survey management
-   - MongoDB integration
-   - Kafka message publishing
-   - Spark job triggering
-   - Health endpoints for monitoring
-
-2. **Frontend** (`index.html`, `static/`)
-   - Responsive design with TailwindCSS
-   - Interactive survey forms
-   - Real-time statistics with Chart.js
-   - Spark job monitoring
-   - ELK log search interface
-
-3. **Data Pipeline**:
+[file content end]
