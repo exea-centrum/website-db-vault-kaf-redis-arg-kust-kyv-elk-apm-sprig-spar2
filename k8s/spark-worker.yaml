@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spark-worker
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   replicas: 1
   selector:
@@ -14,27 +14,30 @@ spec:
         app: spark-worker
     spec:
       containers:
-      - name: spark-worker
-        image: bitnami/spark:3.5.0
-        command: ["/opt/bitnami/spark/bin/spark-class"]
-        args: ["org.apache.spark.deploy.worker.Worker", 
-               "spark://spark-master:7077"]
-        ports:
-        - containerPort: 8081
-          name: http
-        env:
-        - name: SPARK_MODE
-          value: "worker"
-        - name: SPARK_MASTER_URL
-          value: "spark://spark-master:7077"
-        - name: SPARK_WORKER_MEMORY
-          value: "1g"
-        - name: SPARK_WORKER_CORES
-          value: "1"
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1"
+        - name: spark-worker
+          image: bitnami/spark:3.5.0
+          command: ["/opt/bitnami/spark/bin/spark-class"]
+          args:
+            [
+              "org.apache.spark.deploy.worker.Worker",
+              "spark://spark-master:7077",
+            ]
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: SPARK_MODE
+              value: "worker"
+            - name: SPARK_MASTER_URL
+              value: "spark://spark-master:7077"
+            - name: SPARK_WORKER_MEMORY
+              value: "1g"
+            - name: SPARK_WORKER_CORES
+              value: "1"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"

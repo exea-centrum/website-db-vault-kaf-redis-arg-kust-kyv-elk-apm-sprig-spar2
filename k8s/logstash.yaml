@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: logstash
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   replicas: 1
   selector:
@@ -14,64 +14,64 @@ spec:
         app: logstash
     spec:
       containers:
-      - name: logstash
-        image: logstash:8.11.0
-        ports:
-        - containerPort: 5000
-          name: tcp
-        env:
-        - name: XPACK_MONITORING_ENABLED
-          value: "false"
-        command:
-        - logstash
-        - -e
-        - |
-          input {
-            tcp {
-              port => 5000
-              codec => json_lines
-            }
-          }
-          filter {
-            if [type] == "spring" {
-              grok {
-                match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{NUMBER:pid} --- \[%{DATA:thread}\] %{DATA:class} : %{GREEDYDATA:message}" }
+        - name: logstash
+          image: logstash:8.11.0
+          ports:
+            - containerPort: 5000
+              name: tcp
+          env:
+            - name: XPACK_MONITORING_ENABLED
+              value: "false"
+          command:
+            - logstash
+            - -e
+            - |
+              input {
+                tcp {
+                  port => 5000
+                  codec => json_lines
+                }
               }
-              date {
-                match => [ "timestamp", "ISO8601" ]
-                target => "@timestamp"
+              filter {
+                if [type] == "spring" {
+                  grok {
+                    match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{NUMBER:pid} --- \[%{DATA:thread}\] %{DATA:class} : %{GREEDYDATA:message}" }
+                  }
+                  date {
+                    match => [ "timestamp", "ISO8601" ]
+                    target => "@timestamp"
+                  }
+                  mutate {
+                    add_field => { "service_name" => "spring-app" }
+                  }
+                }
               }
-              mutate {
-                add_field => { "service_name" => "spring-app" }
+              output {
+                elasticsearch {
+                  hosts => ["elasticsearch-service:9200"]
+                  index => "logs-%{+YYYY.MM.dd}"
+                }
+                stdout {
+                  codec => rubydebug
+                }
               }
-            }
-          }
-          output {
-            elasticsearch {
-              hosts => ["elasticsearch-service:9200"]
-              index => "logs-%{+YYYY.MM.dd}"
-            }
-            stdout {
-              codec => rubydebug
-            }
-          }
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: logstash-service
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   selector:
     app: logstash
   ports:
-  - port: 5000
-    targetPort: 5000
-    name: tcp
+    - port: 5000
+      targetPort: 5000
+      name: tcp

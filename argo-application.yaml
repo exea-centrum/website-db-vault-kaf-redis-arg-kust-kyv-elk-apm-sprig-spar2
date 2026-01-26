@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+name: website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2
+namespace: argocd
+spec:
+project: default
+source:
+repoURL: https://github.com/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2.git
+targetRevision: HEAD
+path: k8s
+directory:
+recurse: true
+destination:
+server: https://kubernetes.default.svc
+namespace: davtroelkjs
+syncPolicy:
+automated:
+prune: true
+selfHeal: true
+syncOptions:
+- CreateNamespace=true
+- Validate=false
+- PruneLast=true
+- ApplyOutOfSyncOnly=true
+retry:
+limit: 5
+backoff:
+duration: 5s
+factor: 2
+maxDuration: 3m
