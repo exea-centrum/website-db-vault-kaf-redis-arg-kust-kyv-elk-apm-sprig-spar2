@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: apm-server
-  namespace: davtroelkjs
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -14,22 +14,22 @@ spec:
         app: apm-server
     spec:
       containers:
-        - name: apm-server
-          image: docker.elastic.co/apm/apm-server:8.11.0
-          env:
-            - name: output.elasticsearch.hosts
-              value: '["http://elasticsearch-service:9200"]'
-          ports:
-            - containerPort: 8200
+      - name: apm-server
+        image: docker.elastic.co/apm/apm-server:8.11.0
+        env:
+        - name: output.elasticsearch.hosts
+          value: '["http://elasticsearch-service:9200"]'
+        ports:
+        - containerPort: 8200
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: apm-server
-  namespace: davtroelkjs
+  namespace: ${NAMESPACE}
 spec:
   selector:
     app: apm-server
   ports:
-    - port: 8200
-      targetPort: 8200
+  - port: 8200
+    targetPort: 8200
