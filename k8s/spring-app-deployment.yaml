@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spring-app
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
   labels:
     app: spring-app
     version: v2
@@ -19,7 +19,7 @@ spec:
       serviceAccountName: spring-app-sa
       containers:
       - name: spring-app
-        image: ${REGISTRY}/spring-app:latest
+        image: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -54,7 +54,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: spring-app-service
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   selector:
     app: spring-app
@@ -67,13 +67,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: spring-app-sa
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: spring-app-role
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "configmaps"]
@@ -83,11 +83,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: spring-app-rolebinding
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 subjects:
 - kind: ServiceAccount
   name: spring-app-sa
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 roleRef:
   kind: Role
   name: spring-app-role

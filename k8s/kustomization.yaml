@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: ${NAMESPACE}
+namespace: davtroelkjs
 
 resources:
   - spring-app-deployment.yaml
@@ -17,7 +17,7 @@ resources:
 
 images:
   - name: spring-app
-    newName: ${REGISTRY}/spring-app
+    newName: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app
     newTag: latest
 
 configMapGenerator:

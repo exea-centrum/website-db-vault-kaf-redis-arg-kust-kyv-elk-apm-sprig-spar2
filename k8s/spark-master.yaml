@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spark-master
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   replicas: 1
   selector:
@@ -51,7 +51,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: spark-master-service
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   selector:
     app: spark-master

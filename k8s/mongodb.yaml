@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mongodb
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
   labels:
     app: mongodb
 spec:
@@ -57,7 +57,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mongodb-service
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   selector:
     app: mongodb

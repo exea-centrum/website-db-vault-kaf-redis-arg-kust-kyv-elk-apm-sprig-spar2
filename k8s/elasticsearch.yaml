@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: elasticsearch
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   serviceName: elasticsearch-service
   replicas: 1
@@ -44,7 +44,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: elasticsearch-service
-  namespace: ${NAMESPACE}
+  namespace: davtroelkjs
 spec:
   selector:
     app: elasticsearch
