@@ -19,7 +19,7 @@ spec:
       serviceAccountName: spring-app-sa
       containers:
         - name: spring-app
-          image: ${REGISTRY}/spring-app:latest
+          image: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
