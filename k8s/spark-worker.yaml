@@ -31,7 +31,7 @@ spec:
               done
       containers:
         - name: spark-worker
-          image: bitnami/spark:3.4.0
+          image: spark:3.4.0
           ports:
             - containerPort: 8081
               name: webui
