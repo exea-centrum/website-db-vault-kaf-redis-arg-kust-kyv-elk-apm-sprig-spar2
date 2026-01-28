@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar
+  name: website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar.git
+    repoURL: https://github.com/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2.git
     targetRevision: HEAD
-    path: manifests/base
+    path: k8s
   destination:
     server: https://kubernetes.default.svc
     namespace: davtroelkpyjs
