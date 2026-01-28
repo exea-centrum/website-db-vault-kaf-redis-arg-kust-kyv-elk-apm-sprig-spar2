@@ -49,7 +49,7 @@ public class SparkService {
         activeJobs.put(jobId, jobInfo);
         
         // Send to Kafka for async processing
-        // kafkaTemplate.send("survey-responses", response.getId(), response.toString());
+        // // kafkaTemplate.send("survey-responses", response.getId(), response.toString());
         
         // Trigger Spark job
         new Thread(() -> {
