@@ -14,20 +14,18 @@ spec:
         app: spark-master
     spec:
       containers:
-        - name: spark-master
+      - name: spark-master
         image: bitnami/spark:3.5.0
-          command: ["/opt/bitnami/spark/bin/spark-class"]
-          args:
-            [
-              "org.apache.spark.deploy.master.Master",
-              "--host",
-              "spark-master",
-              "--port",
-              "7077",
-              "--webui-port",
-              "8080",
-            ]
-          ports:
+        command: ["/opt/bitnami/spark/bin/spark-class"]
+        args:
+          - "org.apache.spark.deploy.master.Master"
+          - "--host"
+          - "spark-master"
+          - "--port"
+          - "7077"
+          - "--webui-port"
+          - "8080"
+        ports:
             - containerPort: 7077
               name: spark
             - containerPort: 8080
