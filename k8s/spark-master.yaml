@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: spark-master
-          image: bitnami/spark:3.5.1
-          imagePullPolicy: IfNotPresent
+        image: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spark-master:latest
+        imagePullPolicy: Always
           command: ["/opt/bitnami/spark/bin/spark-class"]
           args:
             [

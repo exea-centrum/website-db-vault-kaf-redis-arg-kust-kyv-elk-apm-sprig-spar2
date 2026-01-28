@@ -39,6 +39,24 @@ jobs:
             ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest
             ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:${{ github.sha }}
 
+      - name: Build and push Spark Master
+        uses: docker/build-push-action@v4
+        with:
+          context: ./spark-master
+          push: true
+          tags: |
+            ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spark-master:latest
+            ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spark-master:${{ github.sha }}
+
+      - name: Build and push Spark Worker
+        uses: docker/build-push-action@v4
+        with:
+          context: ./spark-worker
+          push: true
+          tags: |
+            ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spark-worker:latest
+            ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spark-worker:${{ github.sha }}
+
       - name: Update Kustomize
         run: |
           cd k8s
