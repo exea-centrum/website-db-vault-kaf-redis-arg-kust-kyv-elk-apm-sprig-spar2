@@ -25,7 +25,7 @@ spec:
             - sh
             - -c
             - |
-              until kafka-broker-api-versions --bootstrap-server kafka:9092; do
+              until kafka-broker-api-versions --bootstrap-server kafka-broker:9092; do
                 echo "Waiting for Kafka..."
                 sleep 5
               done
@@ -35,7 +35,7 @@ spec:
             [
               "mongosh",
               "--host",
-              "mongodb",
+              "mongodb-service",
               "--eval",
               'db.adminCommand("ping")',
             ]
