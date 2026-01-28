@@ -41,7 +41,7 @@ spec:
             ]
       containers:
         - name: spark-master
-          image: spark:3.4.0
+          image: bitnami/spark:latest
           ports:
             - containerPort: 7077
               name: master
