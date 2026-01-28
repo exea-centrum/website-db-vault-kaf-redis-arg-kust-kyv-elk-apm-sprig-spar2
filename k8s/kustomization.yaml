@@ -4,34 +4,34 @@ kind: Kustomization
 namespace: davtroelkjs
 
 resources:
-  - spring-app-deployment.yaml
-  - kafka-deployment.yaml
-  - apm-server-deployment.yaml
-  - mongodb.yaml
-  - elasticsearch.yaml
-  - logstash.yaml
-  - kibana.yaml
-  - spark-master.yaml
-  - spark-worker.yaml
-  - ingress-extended.yaml
+- spring-app-deployment.yaml
+- kafka-deployment.yaml
+- apm-server-deployment.yaml
+- mongodb.yaml
+- elasticsearch.yaml
+- logstash.yaml
+- kibana.yaml
+- spark-master.yaml
+- spark-worker.yaml
+- ingress-extended.yaml
 
 images:
-  - name: spring-app
-    newName: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app
-    newTag: latest
+- name: spring-app
+  newName: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app
+  newTag: dfba3be939d05d97b83f99e8543a1fe6e5407c8a
 
 configMapGenerator:
-  - name: mongodb-config
-    literals:
-      - database=surveys
-      - host=mongodb-service
-      - port=27017
+- literals:
+  - database=surveys
+  - host=mongodb-service
+  - port=27017
+  name: mongodb-config
 
 secretGenerator:
-  - name: mongodb-secret
-    literals:
-      - username=admin
-      - password=password
-  - name: kibana-auth
-    literals:
-      - auth=admin:password
+- literals:
+  - username=admin
+  - password=password
+  name: mongodb-secret
+- literals:
+  - auth=admin:password
+  name: kibana-auth
