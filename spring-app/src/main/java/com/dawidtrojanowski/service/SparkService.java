@@ -4,7 +4,6 @@ import com.dawidtrojanowski.model.SurveyResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.*;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
@@ -16,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class SparkService {
     
-    private final KafkaTemplate<String, String> kafkaTemplate;
     private final MongoDBService mongoDBService;
     private SparkSession sparkSession;
     private final Map<String, Map<String, Object>> activeJobs = new ConcurrentHashMap<>();
