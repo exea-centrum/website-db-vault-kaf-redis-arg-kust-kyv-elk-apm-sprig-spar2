@@ -9,6 +9,11 @@ metadata:
 spec:
   # lowered replicas to reduce resource pressure on single-node cluster
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2
