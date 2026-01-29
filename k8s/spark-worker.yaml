@@ -7,7 +7,8 @@ metadata:
     app: website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2
     component: spark-worker
 spec:
-  replicas: 2
+  # lowered replicas to reduce resource pressure on single-node cluster
+  replicas: 1
   selector:
     matchLabels:
       app: website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2
@@ -31,7 +32,8 @@ spec:
               done
       containers:
         - name: spark-worker
-          image: bitnami/spark:latest
+          image: bitnami/spark:3.4.1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
               name: webui
@@ -56,11 +58,11 @@ spec:
               value: "no"
           resources:
             requests:
-              cpu: "1000m"
-              memory: "2Gi"
+              cpu: "100m"
+              memory: "256Mi"
             limits:
-              cpu: "2000m"
-              memory: "4Gi"
+              cpu: "500m"
+              memory: "1Gi"
           readinessProbe:
             tcpSocket:
               port: 8081

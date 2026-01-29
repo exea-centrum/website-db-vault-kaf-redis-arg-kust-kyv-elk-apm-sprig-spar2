@@ -41,7 +41,8 @@ spec:
             ]
       containers:
         - name: spark-master
-          image: bitnami/spark:latest
+          image: bitnami/spark:3.4.1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 7077
               name: master
@@ -68,11 +69,11 @@ spec:
               value: "no"
           resources:
             requests:
-              cpu: "500m"
-              memory: "2Gi"
+              cpu: "200m"
+              memory: "512Mi"
             limits:
-              cpu: "2000m"
-              memory: "4Gi"
+              cpu: "1000m"
+              memory: "2Gi"
           readinessProbe:
             tcpSocket:
               port: 7077
