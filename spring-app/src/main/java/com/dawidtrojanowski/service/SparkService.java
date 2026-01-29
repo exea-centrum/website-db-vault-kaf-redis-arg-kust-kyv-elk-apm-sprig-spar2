@@ -1,7 +1,6 @@
 package com.dawidtrojanowski.service;
 
 import com.dawidtrojanowski.model.SurveyResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.*;
 import org.springframework.stereotype.Service;
@@ -12,12 +11,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SparkService {
     
     private final MongoDBService mongoDBService;
     private SparkSession sparkSession;
     private final Map<String, Map<String, Object>> activeJobs = new ConcurrentHashMap<>();
+    
+    public SparkService(MongoDBService mongoDBService) {
+        this.mongoDBService = mongoDBService;
+    }
     
     @PostConstruct
     public void init() {
