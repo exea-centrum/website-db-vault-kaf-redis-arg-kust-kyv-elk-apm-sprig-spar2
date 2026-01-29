@@ -3,7 +3,6 @@ package com.dawidtrojanowski.service;
 import com.dawidtrojanowski.model.SurveyResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.*;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
@@ -15,14 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SparkService {
     
     private final MongoDBService mongoDBService;
-    private final KafkaTemplate<String, String> kafkaTemplate;  // DODANE
     private SparkSession sparkSession;
     private final Map<String, Map<String, Object>> activeJobs = new ConcurrentHashMap<>();
     
-    // POPRAWIONY KONSTRUKTOR - dodano KafkaTemplate
-    public SparkService(MongoDBService mongoDBService, KafkaTemplate<String, String> kafkaTemplate) {
+    public SparkService(MongoDBService mongoDBService) {
         this.mongoDBService = mongoDBService;
-        this.kafkaTemplate = kafkaTemplate;  // DODANE
     }
     
     @PostConstruct
@@ -35,26 +31,11 @@ public class SparkService {
                 .config("spark.mongodb.output.uri", "mongodb://mongodb-service:27017/surveys.aggregated_stats")
                 .config("spark.executor.memory", "1g")
                 .config("spark.driver.memory", "512m")
-                .config("spark.driver.host", "spring-app")  // DODANE dla komunikacji ze Spark
-                .config("spark.driver.port", "7079")  // DODANE
-                .config("spark.blockManager.port", "7080")  // DODANE
                 .getOrCreate();
             
             log.info("Spark session initialized successfully");
         } catch (Exception e) {
-            log.error("Failed to initialize Spark session, running in local mode", e);
-            // Fallback to local mode
-            try {
-                sparkSession = SparkSession.builder()
-                    .appName("SurveyAnalytics")
-                    .master("local[*]")
-                    .config("spark.mongodb.input.uri", "mongodb://mongodb-service:27017/surveys.survey_responses")
-                    .config("spark.mongodb.output.uri", "mongodb://mongodb-service:27017/surveys.aggregated_stats")
-                    .getOrCreate();
-                log.info("Spark session initialized in local mode");
-            } catch (Exception ex) {
-                log.error("Failed to initialize Spark session in local mode", ex);
-            }
+            log.error("Failed to initialize Spark session", e);
         }
     }
     
@@ -69,24 +50,12 @@ public class SparkService {
         
         activeJobs.put(jobId, jobInfo);
         
-        try {
-            // Send to Kafka for async processing - ODKOMENTOWANE
-            kafkaTemplate.send("survey-responses", response.getId(), response.toString());
-            log.info("Sent survey response {} to Kafka", response.getId());
-        } catch (Exception e) {
-            log.error("Failed to send to Kafka, continuing with Spark processing", e);
-        }
+        // Send to Kafka for async processing
+        // // kafkaTemplate.send("survey-responses", response.getId(), response.toString());
         
-        // Trigger Spark job asynchronously
+        // Trigger Spark job
         new Thread(() -> {
             try {
-                if (sparkSession == null) {
-                    log.warn("Spark session not initialized, skipping Spark processing");
-                    jobInfo.put("state", "SKIPPED");
-                    jobInfo.put("reason", "Spark session not available");
-                    return;
-                }
-                
                 Dataset<Row> responses = sparkSession.read()
                     .format("mongodb")
                     .load();
@@ -113,14 +82,6 @@ public class SparkService {
                 jobInfo.put("state", "FAILED");
                 jobInfo.put("error", e.getMessage());
                 log.error("Spark job failed: {}", jobId, e);
-            } finally {
-                // Clean up after 5 minutes
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        activeJobs.remove(jobId);
-                    }
-                }, 5 * 60 * 1000);
             }
         }).start();
     }
@@ -128,8 +89,7 @@ public class SparkService {
     public Map<String, Object> getAggregatedStats() {
         try {
             if (sparkSession == null) {
-                log.warn("Spark session not initialized, returning basic stats from MongoDB");
-                return mongoDBService.getBasicStats();
+                return Collections.emptyMap();
             }
             
             Dataset<Row> stats = sparkSession.read()
@@ -141,25 +101,16 @@ public class SparkService {
             result.put("total_responses", stats.count());
             result.put("aggregations", stats.collectAsList());
             result.put("timestamp", new Date());
-            result.put("spark_enabled", true);
             
             return result;
             
         } catch (Exception e) {
-            log.error("Failed to get aggregated stats from Spark, falling back to MongoDB", e);
+            log.error("Failed to get aggregated stats", e);
             return mongoDBService.getBasicStats();
         }
     }
     
     public List<Map<String, Object>> getActiveJobs() {
         return new ArrayList<>(activeJobs.values());
-    }
-    
-    // Dodaj metodę do zamykania SparkSession
-    public void closeSparkSession() {
-        if (sparkSession != null) {
-            sparkSession.close();
-            log.info("Spark session closed");
-        }
     }
 }

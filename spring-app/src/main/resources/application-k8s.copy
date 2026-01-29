@@ -26,12 +26,6 @@ spring:
     rest:
       uris: http://${ELASTICSEARCH_HOST:elasticsearch-service:9200}
 
-# DODANE: Spark configuration
-spark:
-  master: spark://${SPARK_MASTER:spark-master:7077}
-  fallback-to-local: true
-  init-delay-ms: 10000 # Opóźnienie inicjalizacji Spark (10 sekund)
-
 management:
   endpoints:
     web:
@@ -56,3 +50,4 @@ logging:
     host: logstash-service
     port: 5000
     enabled: true
+
