@@ -44,6 +44,8 @@ spec:
             - containerPort: 8081
               name: webui
           env:
+            - name: SPARK_LOCAL_IP
+              value: "0.0.0.0"
             - name: SPARK_MODE
               value: "worker"
             - name: SPARK_MASTER_URL

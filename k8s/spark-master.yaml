@@ -56,6 +56,8 @@ spec:
             - containerPort: 4040
               name: jobui
           env:
+            - name: SPARK_LOCAL_IP
+              value: "0.0.0.0"
             - name: SPARK_MODE
               value: "master"
             - name: SPARK_MASTER_HOST
