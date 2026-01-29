@@ -43,6 +43,11 @@ spec:
         - name: spark-master
           image: apache/spark:latest
           imagePullPolicy: IfNotPresent
+          command:
+            [
+              "/opt/spark/bin/spark-class",
+              "org.apache.spark.deploy.master.Master",
+            ]
           ports:
             - containerPort: 7077
               name: master

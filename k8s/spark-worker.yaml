@@ -34,6 +34,12 @@ spec:
         - name: spark-worker
           image: apache/spark:latest
           imagePullPolicy: IfNotPresent
+          command:
+            [
+              "/opt/spark/bin/spark-class",
+              "org.apache.spark.deploy.worker.Worker",
+              "spark://spark-master:7077",
+            ]
           ports:
             - containerPort: 8081
               name: webui
