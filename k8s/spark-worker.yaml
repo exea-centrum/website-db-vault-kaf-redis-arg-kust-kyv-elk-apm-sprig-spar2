@@ -32,7 +32,7 @@ spec:
               done
       containers:
         - name: spark-worker
-          image: apache/spark:3.4.1
+          image: apache/spark:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081

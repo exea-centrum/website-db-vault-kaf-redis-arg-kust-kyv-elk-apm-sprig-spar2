@@ -41,7 +41,7 @@ spec:
             ]
       containers:
         - name: spark-master
-          image: apache/spark:3.4.1
+          image: apache/spark:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 7077
