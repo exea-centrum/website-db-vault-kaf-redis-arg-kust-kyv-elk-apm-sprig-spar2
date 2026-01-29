@@ -2,17 +2,18 @@ apiVersion: v1
 kind: Service
 metadata:
   name: spark-master
+  namespace: davtroelkjs
   labels:
     app: spark
     component: master
 spec:
   type: ClusterIP
   ports:
-  - name: spark-master
+  - name: spark
     port: 7077
     targetPort: 7077
     protocol: TCP
-  - name: spark-webui
+  - name: webui
     port: 8080
     targetPort: 8080
     protocol: TCP
@@ -24,6 +25,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spark-master
+  namespace: davtroelkjs
   labels:
     app: spark
     component: master
@@ -41,105 +43,44 @@ spec:
     spec:
       containers:
       - name: spark-master
-        image: bitnami/spark:3.5.1  # lub apache/spark:3.5.1
-        imagePullPolicy: IfNotPresent
+        image: apache/spark:3.5.1
+        command: 
+        - "/opt/spark/sbin/start-master.sh"
+        args:
+        - "-h"
+        - "0.0.0.0"
+        - "-p"
+        - "7077"
         env:
-        # Podstawowe ustawienia Spark
-        - name: SPARK_MODE
-          value: master
         - name: SPARK_MASTER_HOST
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
+          value: "0.0.0.0"
         - name: SPARK_MASTER_PORT
           value: "7077"
         - name: SPARK_MASTER_WEBUI_PORT
           value: "8080"
-        - name: SPARK_MASTER_BIND_ADDRESS
-          value: "0.0.0.0"
-        
-        # Optymalizacje dla Kubernetes
         - name: SPARK_LOCAL_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: SPARK_PUBLIC_DNS
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        
-        # Konfiguracja bezpieczeństwa
+          value: "0.0.0.0"
         - name: SPARK_NO_DAEMONIZE
           value: "true"
-        - name: SPARK_DAEMON_MEMORY
-          value: "1g"
-        
-        # Konfiguracja dla pracy
-        - name: SPARK_WORKER_CORES
-          value: "1"
-        - name: SPARK_WORKER_MEMORY
-          value: "1g"
-        
-        # Ustawienia sieciowe - KLUCZOWE dla rozwiązania problemu z portami
-        - name: SPARK_PORT_MAX_RETRIES
-          value: "0"  # Wyłącz automatyczne próby portów
-        
-        # Java settings
-        - name: JAVA_OPTS
-          value: "-Djava.net.preferIPv4Stack=true -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35"
-        
-        # Ustawienia debugowania (opcjonalnie, można usunąć po debugowaniu)
-        - name: SPARK_LOG_LEVEL
-          value: "INFO"
-        - name: SPARK_MASTER_OPTS
-          value: "-Dspark.driver.port=7001 -Dspark.fileserver.port=7002 -Dspark.broadcast.port=7003 -Dspark.replClassServer.port=7004 -Dspark.blockManager.port=7005 -Dspark.executor.port=7006 -Dspark.ui.port=8080 -Dspark.blockManager.port=7007"
-        
-        resources:
-          requests:
-            memory: "2Gi"
-            cpu: "1"
-          limits:
-            memory: "4Gi"
-            cpu: "2"
-        
         ports:
         - containerPort: 7077
-          name: spark-master
-          protocol: TCP
+          name: spark
         - containerPort: 8080
-          name: spark-webui
-          protocol: TCP
-        - containerPort: 6066
-          name: spark-rest
-          protocol: TCP
-        
+          name: webui
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
         livenessProbe:
           tcpSocket:
             port: 7077
           initialDelaySeconds: 30
-          periodSeconds: 30
-          failureThreshold: 3
-        
+          periodSeconds: 10
         readinessProbe:
           tcpSocket:
             port: 7077
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        
-        volumeMounts:
-        - name: spark-logs
-          mountPath: /opt/bitnami/spark/logs
-        - name: spark-data
-          mountPath: /tmp/spark-events
-        
-      volumes:
-      - name: spark-logs
-        emptyDir: {}
-      - name: spark-data
-        emptyDir: {}
-      
-      # Opcjonalnie: jeśli masz problemy z DNS
-      # hostAliases:
-      # - ip: "127.0.0.1"
-      #   hostnames:
-      #   - "spark-master"
+          initialDelaySeconds: 5
+          periodSeconds: 5

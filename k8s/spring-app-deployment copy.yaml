@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app
+  namespace: davtroelkjs
+  labels:
+    app: spring-app
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-app
+  template:
+    metadata:
+      labels:
+        app: spring-app
+    spec:
+      serviceAccountName: spring-app-sa
+      containers:
+      - name: spring-app
+        image: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: MONGODB_URI
+          value: "mongodb://mongodb-service:27017/surveys"
+        - name: SPRING_DATA_MONGODB_DATABASE
+          value: "surveys"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-app-service
+  namespace: davtroelkjs
+spec:
+  selector:
+    app: spring-app
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spring-app-sa
+  namespace: davtroelkjs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: spring-app-role
+  namespace: davtroelkjs
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: spring-app-rolebinding
+  namespace: davtroelkjs
+subjects:
+- kind: ServiceAccount
+  name: spring-app-sa
+  namespace: davtroelkjs
+roleRef:
+  kind: Role
+  name: spring-app-role
+  apiGroup: rbac.authorization.k8s.io

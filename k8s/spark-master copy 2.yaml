@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master
+  labels:
+    app: spark
+    component: master
+spec:
+  type: ClusterIP
+  ports:
+  - name: spark-master
+    port: 7077
+    targetPort: 7077
+    protocol: TCP
+  - name: spark-webui
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: spark
+    component: master
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-master
+  labels:
+    app: spark
+    component: master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark
+      component: master
+  template:
+    metadata:
+      labels:
+        app: spark
+        component: master
+    spec:
+      containers:
+      - name: spark-master
+        image: bitnami/spark:3.5.1  # lub apache/spark:3.5.1
+        imagePullPolicy: IfNotPresent
+        env:
+        # Podstawowe ustawienia Spark
+        - name: SPARK_MODE
+          value: master
+        - name: SPARK_MASTER_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: SPARK_MASTER_PORT
+          value: "7077"
+        - name: SPARK_MASTER_WEBUI_PORT
+          value: "8080"
+        - name: SPARK_MASTER_BIND_ADDRESS
+          value: "0.0.0.0"
+        
+        # Optymalizacje dla Kubernetes
+        - name: SPARK_LOCAL_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: SPARK_PUBLIC_DNS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        
+        # Konfiguracja bezpieczeństwa
+        - name: SPARK_NO_DAEMONIZE
+          value: "true"
+        - name: SPARK_DAEMON_MEMORY
+          value: "1g"
+        
+        # Konfiguracja dla pracy
+        - name: SPARK_WORKER_CORES
+          value: "1"
+        - name: SPARK_WORKER_MEMORY
+          value: "1g"
+        
+        # Ustawienia sieciowe - KLUCZOWE dla rozwiązania problemu z portami
+        - name: SPARK_PORT_MAX_RETRIES
+          value: "0"  # Wyłącz automatyczne próby portów
+        
+        # Java settings
+        - name: JAVA_OPTS
+          value: "-Djava.net.preferIPv4Stack=true -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35"
+        
+        # Ustawienia debugowania (opcjonalnie, można usunąć po debugowaniu)
+        - name: SPARK_LOG_LEVEL
+          value: "INFO"
+        - name: SPARK_MASTER_OPTS
+          value: "-Dspark.driver.port=7001 -Dspark.fileserver.port=7002 -Dspark.broadcast.port=7003 -Dspark.replClassServer.port=7004 -Dspark.blockManager.port=7005 -Dspark.executor.port=7006 -Dspark.ui.port=8080 -Dspark.blockManager.port=7007"
+        
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        
+        ports:
+        - containerPort: 7077
+          name: spark-master
+          protocol: TCP
+        - containerPort: 8080
+          name: spark-webui
+          protocol: TCP
+        - containerPort: 6066
+          name: spark-rest
+          protocol: TCP
+        
+        livenessProbe:
+          tcpSocket:
+            port: 7077
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          failureThreshold: 3
+        
+        readinessProbe:
+          tcpSocket:
+            port: 7077
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        
+        volumeMounts:
+        - name: spark-logs
+          mountPath: /opt/bitnami/spark/logs
+        - name: spark-data
+          mountPath: /tmp/spark-events
+        
+      volumes:
+      - name: spark-logs
+        emptyDir: {}
+      - name: spark-data
+        emptyDir: {}
+      
+      # Opcjonalnie: jeśli masz problemy z DNS
+      # hostAliases:
+      # - ip: "127.0.0.1"
+      #   hostnames:
+      #   - "spark-master"
