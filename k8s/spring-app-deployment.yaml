@@ -6,9 +6,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 8080
-      targetPort: 8080
-      name: http
+  - port: 8080
+    targetPort: 8080
+    name: http
   selector:
     app: spring-app
 ---
@@ -30,71 +30,54 @@ spec:
         app: spring-app
     spec:
       initContainers:
-        - name: wait-for-kafka
-          image: bitnami/kafka:3.6
-          command:
-            [
-              "sh",
-              "-c",
-              "until nc -z kafka 9092; do echo waiting for kafka; sleep 2; done;",
-            ]
-        - name: wait-for-mongodb
-          image: mongo:6
-          command:
-            [
-              "sh",
-              "-c",
-              "until nc -z mongodb 27017; do echo waiting for mongodb; sleep 2; done;",
-            ]
-        - name: wait-for-spark
-          image: curlimages/curl:7.86.0
-          command:
-            [
-              "sh",
-              "-c",
-              "until curl -f http://spark-master:8080; do echo waiting for spark master; sleep 5; done;",
-            ]
-
+      - name: wait-for-kafka
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z kafka 9092; do echo waiting for kafka; sleep 2; done;']
+      - name: wait-for-mongodb
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z mongodb 27017; do echo waiting for mongodb; sleep 2; done;']
+      - name: wait-for-spark
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z spark-master 7077; do echo waiting for spark master; sleep 5; done;']
+      
       containers:
-        - name: spring-app
-          image: spring-survey-api:latest # ZMIEŃ NA SWÓJ OBRAZ
-          imagePullPolicy: Always
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "kubernetes"
-            - name: KAFKA_BOOTSTRAP_SERVERS
-              value: "kafka:9092"
-            - name: MONGODB_URI
-              value: "mongodb:27017"
-            - name: SPARK_MASTER
-              value: "spark-master:7077"
-            - name: SPARK_FALLBACK_TO_LOCAL
-              value: "true"
-            - name: JAVA_OPTS
-              value: "-Xmx512m -Xms256m -Dspark.driver.host=spring-app -Dspark.driver.port=7079"
-          ports:
-            - containerPort: 8080
-              name: http
-          resources:
-            requests:
-              memory: "1Gi"
-              cpu: "500m"
-            limits:
-              memory: "2Gi"
-              cpu: "1"
-          livenessProbe:
-            httpGet:
-              path: /api/v2/health
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 120 # Dłuższy opóźnienie (2 minuty)
-            periodSeconds: 30
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /api/v2/health
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 90
-            periodSeconds: 15
-            failureThreshold: 3
+      - name: spring-app
+        image: spring-survey-api:latest  # Upewnij się że masz zbudowany ten obraz
+        imagePullPolicy: Always
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: MONGODB_URI
+          value: "mongodb:27017"
+        - name: SPARK_MASTER
+          value: "spark-master:7077"
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m -Dspark.driver.host=spring-app -Dspark.driver.port=7079"
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /api/v2/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v2/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 15
+          failureThreshold: 3

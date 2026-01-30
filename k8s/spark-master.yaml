@@ -44,7 +44,7 @@ spec:
       containers:
       - name: spark-master
         image: apache/spark:3.5.1
-        command: 
+        command:
         - "/opt/spark/sbin/start-master.sh"
         args:
         - "-h"
@@ -67,13 +67,6 @@ spec:
           name: spark
         - containerPort: 8080
           name: webui
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1"
         livenessProbe:
           tcpSocket:
             port: 7077
@@ -84,3 +77,10 @@ spec:
             port: 7077
           initialDelaySeconds: 5
           periodSeconds: 5
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"

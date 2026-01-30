@@ -7,51 +7,77 @@ metadata:
     app: spark
     component: worker
 spec:
-  replicas: 2  # Możesz zmienić liczbę workerów
+  replicas: 2
   selector:
     matchLabels:
       app: spark
       component: worker
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
   template:
     metadata:
       labels:
         app: spark
         component: worker
     spec:
+      initContainers:
+        - name: wait-for-spark-master
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z spark-master 7077; do
+                echo "Waiting for Spark Master..."
+                sleep 5
+              done
       containers:
-      - name: spark-worker
-        image: apache/spark:3.5.1
-        command: 
-        - "/opt/spark/sbin/start-worker.sh"
-        args:
-        - "spark://spark-master:7077"
-        env:
-        - name: SPARK_WORKER_CORES
-          value: "2"
-        - name: SPARK_WORKER_MEMORY
-          value: "2g"
-        - name: SPARK_WORKER_PORT
-          value: "7078"
-        - name: SPARK_WORKER_WEBUI_PORT
-          value: "8081"
-        - name: SPARK_LOCAL_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        ports:
-        - containerPort: 7078
-          name: worker
-        - containerPort: 8081
-          name: worker-webui
-        resources:
-          requests:
-            memory: "2Gi"
-            cpu: "1"
-          limits:
-            memory: "4Gi"
-            cpu: "2"
-        livenessProbe:
-          tcpSocket:
-            port: 7078
-          initialDelaySeconds: 30
-          periodSeconds: 10
+        - name: spark-worker
+          image: apache/spark:3.5.1
+          command:
+            - "/opt/spark/sbin/start-worker.sh"
+          args:
+            - "spark://spark-master:7077"
+          env:
+            - name: SPARK_WORKER_CORES
+              value: "2"
+            - name: SPARK_WORKER_MEMORY
+              value: "2g"
+            - name: SPARK_WORKER_PORT
+              value: "7078"
+            - name: SPARK_WORKER_WEBUI_PORT
+              value: "8081"
+            - name: SPARK_LOCAL_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: SPARK_NO_DAEMONIZE
+              value: "true"
+          ports:
+            - containerPort: 7078
+              name: worker
+              protocol: TCP
+            - containerPort: 8081
+              name: worker-webui
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 7078
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 7078
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
