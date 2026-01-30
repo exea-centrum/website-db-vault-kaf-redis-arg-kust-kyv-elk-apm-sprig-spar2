@@ -18,7 +18,7 @@ resources:
 images:
 - name: spring-app
   newName: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app
-  newTag: dfba3be939d05d97b83f99e8543a1fe6e5407c8a
+  newTag: 03fd7285ab0716db948645e37e9fdf0fbd5cf0c2
 
 configMapGenerator:
 - literals:
