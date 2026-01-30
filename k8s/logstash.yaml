@@ -22,39 +22,37 @@ spec:
         env:
         - name: XPACK_MONITORING_ENABLED
           value: "false"
-        command:
-        - logstash
-        - -e
-        - |
-          input {
-            tcp {
-              port => 5000
-              codec => json_lines
-            }
-          }
-          filter {
-            if [type] == "spring" {
-              grok {
-                match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{NUMBER:pid} --- \[%{DATA:thread}\] %{DATA:class} : %{GREEDYDATA:message}" }
-              }
-              date {
-                match => [ "timestamp", "ISO8601" ]
-                target => "@timestamp"
-              }
-              mutate {
-                add_field => { "service_name" => "spring-app" }
+        - name: LOGSTASH_PIPELINE_CONFIG_STRING
+          value: |
+            input {
+              tcp {
+                port => 5000
+                codec => json_lines
               }
             }
-          }
-          output {
-            elasticsearch {
-              hosts => ["elasticsearch-service:9200"]
-              index => "logs-%{+YYYY.MM.dd}"
+            filter {
+              if [type] == "spring" {
+                grok {
+                  match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{NUMBER:pid} --- \[%{DATA:thread}\] %{DATA:class} : %{GREEDYDATA:message}" }
+                }
+                date {
+                  match => [ "timestamp", "ISO8601" ]
+                  target => "@timestamp"
+                }
+                mutate {
+                  add_field => { "service_name" => "spring-app" }
+                }
+              }
             }
-            stdout {
-              codec => rubydebug
+            output {
+              elasticsearch {
+                hosts => ["elasticsearch-service:9200"]
+                index => "logs-%{+YYYY.MM.dd}"
+              }
+              stdout {
+                codec => rubydebug
+              }
             }
-          }
         resources:
           requests:
             memory: "512Mi"

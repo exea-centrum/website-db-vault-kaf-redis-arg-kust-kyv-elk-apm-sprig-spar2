@@ -3,12 +3,14 @@ kind: Service
 metadata:
   name: spring-app
   namespace: davtroelkjs
+  labels:
+    app: spring-app
 spec:
   type: ClusterIP
   ports:
-  - port: 8080
-    targetPort: 8080
-    name: http
+    - port: 8080
+      targetPort: 8080
+      name: http
   selector:
     app: spring-app
 ---
@@ -30,54 +32,91 @@ spec:
         app: spring-app
     spec:
       initContainers:
-      - name: wait-for-kafka
-        image: busybox:1.35
-        command: ['sh', '-c', 'until nc -z kafka 9092; do echo waiting for kafka; sleep 2; done;']
-      - name: wait-for-mongodb
-        image: busybox:1.35
-        command: ['sh', '-c', 'until nc -z mongodb 27017; do echo waiting for mongodb; sleep 2; done;']
-      - name: wait-for-spark
-        image: busybox:1.35
-        command: ['sh', '-c', 'until nc -z spark-master 7077; do echo waiting for spark master; sleep 5; done;']
-      
+        - name: wait-for-kafka
+          image: busybox:1.35
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z kafka-broker 9092; do echo waiting for kafka; sleep 2; done;",
+            ]
+        - name: wait-for-mongodb
+          image: busybox:1.35
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z mongodb-service 27017; do echo waiting for mongodb; sleep 2; done;",
+            ]
+        - name: wait-for-elasticsearch
+          image: busybox:1.35
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z elasticsearch-service 9200; do echo waiting for elasticsearch; sleep 2; done;",
+            ]
+        - name: wait-for-spark
+          image: busybox:1.35
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z spark-master 7077; do echo waiting for spark master; sleep 5; done;",
+            ]
+
       containers:
-      - name: spring-app
-        image: spring-survey-api:latest  # Upewnij się że masz zbudowany ten obraz
-        imagePullPolicy: Always
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "kubernetes"
-        - name: KAFKA_BOOTSTRAP_SERVERS
-          value: "kafka:9092"
-        - name: MONGODB_URI
-          value: "mongodb:27017"
-        - name: SPARK_MASTER
-          value: "spark-master:7077"
-        - name: JAVA_OPTS
-          value: "-Xmx512m -Xms256m -Dspark.driver.host=spring-app -Dspark.driver.port=7079"
-        ports:
-        - containerPort: 8080
-          name: http
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1"
-        livenessProbe:
-          httpGet:
-            path: /api/v2/health
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 120
-          periodSeconds: 30
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /api/v2/health
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 90
-          periodSeconds: 15
-          failureThreshold: 3
+        - name: spring-app
+          image: ghcr.io/exea-centrum/website-db-vault-kaf-redis-arg-kust-kyv-elk-apm-sprig-spar2/spring-app:dfba3be939d05d97b83f99e8543a1fe6e5407c8a
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "kubernetes"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-broker:9092"
+            - name: MONGODB_URI
+              value: "mongodb://mongodb-service:27017/surveys"
+            - name: SPARK_MASTER
+              value: "spark://spark-master:7077"
+            - name: ELASTICSEARCH_HOST
+              value: "elasticsearch-service:9200"
+            - name: LOGSTASH_HOST
+              value: "logstash-service:5000"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-broker:9092"
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://mongodb-service:27017/surveys"
+            - name: SPRING_ELASTICSEARCH_URIS
+              value: "http://elasticsearch-service:9200"
+            - name: JAVA_OPTS
+              value: "-Xmx512m -Xms256m -Dspring.kafka.bootstrap-servers=kafka-broker:9092 -Dspring.data.mongodb.uri=mongodb://mongodb-service:27017/surveys -Dspring.profiles.active=kubernetes"
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /api/v2/health
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v2/health
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            failureThreshold: 3
+          volumeMounts:
+            - name: app-logs
+              mountPath: /var/log
+      volumes:
+        - name: app-logs
+          emptyDir: {}

@@ -24,6 +24,12 @@ spec:
               value: "false"
             - name: ES_JAVA_OPTS
               value: "-Xms512m -Xmx512m"
+            - name: network.host
+              value: "0.0.0.0"
+            - name: http.host
+              value: "0.0.0.0"
+            - name: transport.host
+              value: "0.0.0.0"
           ports:
             - containerPort: 9200
               name: http
@@ -39,6 +45,14 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "1"
+  volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
